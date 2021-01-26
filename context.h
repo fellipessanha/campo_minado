@@ -31,6 +31,8 @@ class Context
   void defeat();
 
 public:
+  
+  bool gameOver;
 
   // inits the standart difficulties
   Context(difficulty X);

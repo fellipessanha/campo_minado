@@ -55,59 +55,6 @@ namespace minesweeper
     }
   }
 
-  void Context::eventcheck(unsigned coord)
-  {
-
-    if (warn.at(coord) == 9)
-    {
-      defeat();
-    }
-    else
-    {
-      // this makes it so the selected
-      table.at(coord) == !table.at(coord);
-
-      if (warn.at(coord) == 0)
-      {
-        // mines top
-        if (coord >= xmax)
-        {
-          // top left
-          if (coord % xmax != 0)
-            eventcheck(coord - 1 - xmax);
-
-          // top
-          eventcheck(coord - xmax);
-
-          // top right
-          if (coord % xmax != xmax - 1)
-            eventcheck(coord + 1 - xmax);
-        }
-
-        // left
-        if ((coord % xmax != 0))
-          eventcheck(coord - 1);
-
-        // right
-        if ((coord % xmax) != (xmax - 1))
-          eventcheck(coord + 1);
-
-        // mines bot
-        if (coord < ymax * (xmax - 1))
-        {
-          // bot left
-          if (coord % xmax != 0)
-            eventcheck(coord - 1 + xmax);
-          // bot
-          eventcheck(coord + xmax);
-          // bot right
-          if (coord % xmax != (xmax - 1))
-            eventcheck(coord + 1 + xmax);
-        }
-      }
-    }
-  }
-
   Context::Context(difficulty X)
   {
     switch (X)
@@ -138,7 +85,7 @@ namespace minesweeper
       warn.push_back(0);
       table.push_back(false);
     }
-    std::cout << "sz: " << table.size() << "\n";
+    // std::cout << "sz: " << table.size() << "\n";
 
     // creating random bombs
     createRandomBombs(40);
@@ -146,9 +93,12 @@ namespace minesweeper
     // creating helping numbers
     minecheck();
 
-    // sets the table to be used for the gameplay
-    for (bool i: table)
-      i = false;
+    // shows number of mines of each square
+    for (unsigned i = 0; i < table.size(); i++)
+    {
+      // turns table into the input source
+      table.at(i) = false;
+    }
   }
 
   void Context::createRandomBombs(unsigned initial_click_index)
@@ -158,14 +108,56 @@ namespace minesweeper
     {
       index_v[i] = i;
     }
+
+    // making sure squares surrounding initial click place are safe
+    // by taking them out of the random index
+
+    // mines bot
+    if (initial_click_index < ymax * (xmax - 1))
+    {
+      // bot right
+      if (initial_click_index % xmax != (xmax - 1))
+        index_v.erase(index_v.begin() + initial_click_index + xmax + 1);
+      // bot
+      index_v.erase(index_v.begin() + initial_click_index + xmax);
+      // bot left
+      if (initial_click_index % xmax != 0)
+        index_v.erase(index_v.begin() + initial_click_index + xmax - 1);
+    }
+
+    // right
+    if ((initial_click_index % xmax) != (xmax - 1))
+    {
+      index_v.erase(index_v.begin() + initial_click_index + 1);
+    }
+    // the actual spot
     index_v.erase(index_v.begin() + initial_click_index);
+    // left
+    if ((initial_click_index % xmax != 0))
+    {
+      index_v.erase(index_v.begin() + initial_click_index - 1);
+    }
+
+    // mines top
+    if (initial_click_index >= xmax)
+    {
+      // top right
+      if (initial_click_index % xmax != xmax - 1)
+        index_v.erase(index_v.begin() + initial_click_index - xmax + 1);
+      // top
+      index_v.erase(index_v.begin() + initial_click_index - xmax);
+      // top left
+      if (initial_click_index % xmax != 0)
+        index_v.erase(index_v.begin() + initial_click_index - xmax - 1);
+    }
 
     for (unsigned i = 0; i < minecount; ++i)
     {
       auto random_index = rand() % index_v.size();
       auto index = index_v[random_index];
       index_v.erase(index_v.begin() + random_index);
-      table[index] = true;
+      warn[index] = 9;
+      table.at(index) = true;
     }
   }
 
@@ -177,7 +169,7 @@ namespace minesweeper
       warn.push_back(0);
       table.push_back(false);
     }
-    std::cout << "sz: " << table.size() << "\n";
+    // std::cout << "sz: " << table.size() << "\n";
 
     createRandomBombs(45);
 
@@ -210,6 +202,80 @@ namespace minesweeper
       }
     }
     std::cout << "\n\n";
+  }
+
+  void Context::show()
+  {
+    for (unsigned i = 0; i < table.size(); i++)
+    {
+      if (i % xmax == 0)
+        std::cout << "\n";
+
+      if (!table.at(i))
+      {
+        std::cout << ".";
+      }
+      else
+      {
+        std::cout << warn.at(i);
+      }
+    }
+    std::cout << "\n";
+  }
+
+  void Context::eventcheck(unsigned coord)
+  {
+    if (warn.at(coord) == 9)
+    {
+      defeat();
+    }
+    else
+    {
+      // this makes it so the selected square is set as already checked
+      table[coord] = true;
+
+      // should make the game check the surroudings if it's a spot without mine neighbors
+      if (warn.at(coord) == 0)
+      {
+        // mines top
+        if (coord >= xmax)
+        {
+          // top left
+          if (coord % xmax != 0 && !table.at(coord - 1 - xmax))
+            eventcheck(coord - 1 - xmax);
+
+          // top
+          if (!table.at(coord - xmax))
+            eventcheck(coord - xmax);
+
+          // top right
+          if (coord % xmax != xmax - 1 && !table.at(coord - 1 - xmax))
+            eventcheck(coord + 1 - xmax);
+        }
+
+        // left
+        if (coord % xmax != 0 && !table.at(coord - 1))
+          eventcheck(coord - 1);
+
+        // right
+        if ((coord % xmax) != (xmax - 1) && !table.at(coord + 1))
+          eventcheck(coord + 1);
+
+        // mines bot
+        if (coord < ymax * (xmax - 1))
+        {
+          // bot left
+          if (coord % xmax != 0 && !table.at(coord - 1 + xmax))
+            eventcheck(coord - 1 + xmax);
+          // bot
+          if (!table.at(coord + xmax))
+            eventcheck(coord + xmax);
+          // bot right
+          if (coord % xmax != (xmax - 1) && !table.at(coord + xmax + 1))
+            eventcheck(coord + 1 + xmax);
+        }
+      }
+    }
   }
 
   // shows number of mines of each square
