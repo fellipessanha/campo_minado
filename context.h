@@ -17,18 +17,6 @@ enum class difficulty
   E
 };
 
-// shows number of mines of each square
-// std::cout << "\n\n";
-// for (unsigned i = 0; i < table.size(); i++)
-// {
-//     if (i % xmax == xmax - 1)
-//     {
-//         std::cout << warn.at(i) << "\n";
-//     }
-//     else
-//         std::cout << warn.at(i) << " ";
-// }
-
 namespace minesweeper
 {
 
@@ -39,13 +27,20 @@ class Context
   unsigned minecount, xmax, ymax;
 
   void minecheck();
+  void createRandomBombs(unsigned initial_click_index);
+  void defeat();
 
 public:
+
+  // inits the standart difficulties
   Context(difficulty X);
-  void createRandomBombs(unsigned initial_click_index);
+
   // init with custom sizes
   Context(unsigned x, unsigned y, unsigned m);
-  void defeat();
+
+  void eventcheck(unsigned coord);
+  void show();
+  
 };
 
 } // namespace minesweeper
